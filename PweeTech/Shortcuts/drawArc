@@ -1,0 +1,24 @@
+---@diagnostic disable: lowercase-global, cast-local-type, undefined-global
+
+function drawArc(cx, cy, R, SAng, EAng, Fill, Step)
+	SAng = SAng -180 or 0
+	EAng = EAng -180 or 360
+	Step = Step or 22.5
+	if EAng < SAng then 
+		EAng, SAng = SAng, EAng 
+	end
+	local a, px, py, ox, oy, Rad = false,0,0,0,0,0
+	repeat
+		a = a and math.min(a +Step,EAng) or SAng
+		Rad = (a -90) *math.pi /180
+		px, py = cx +R *math.cos(Rad), cy +R *math.sin(Rad)
+		if a ~= SAng then
+			if Fill then
+				screen.drawTriangleF(cx, cy, ox, oy, px, py)
+			else
+				screen.drawLine(ox, oy, px, py)
+			end
+		end
+		ox, oy = px, py
+	until(a >= EAng)
+end

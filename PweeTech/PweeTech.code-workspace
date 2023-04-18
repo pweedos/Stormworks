@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"name": "Loading Screen",
+			"path": "Loading Screen"
+		},
+		{
+			"name": "Radar",
+			"path": "Radar"
+		},
+		{
+			"path": "Shortcuts"
+		}
+	],
+	"settings": {},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": []
+	}
+}

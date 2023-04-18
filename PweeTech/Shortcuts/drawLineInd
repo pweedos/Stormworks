@@ -1,0 +1,9 @@
+---@diagnostic disable: undefined-global, lowercase-global
+
+function drawLineInd(cx, cy, R, Val, MaxV, SAng, EAng)
+    VRad = (Val /MaxV *((EAng-SAng)/360) *math.pi *2) +(90 *math.pi/180)
+    SRad = SAng *(math.pi/180)
+    ERad = EAng *(math.pi/180)
+    Rad = VRad +SRad
+    screen.drawLine( cx, cy, cx +R *math.cos(Rad), cy +R *math.sin(Rad))
+end
