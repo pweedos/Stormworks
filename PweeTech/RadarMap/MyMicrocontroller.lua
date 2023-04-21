@@ -14,7 +14,7 @@ do
     ---@type Simulator -- Set properties and screen sizes here - will run once when the script is loaded
     simulator = simulator
     simulator:setScreen(1, "5x3")
-    simulator:setProperty("ExampleNumberProperty", 123)
+    simulator:setProperty("Max Radar Distance", 50000)
 
     -- Runs every tick just before onTick; allows you to simulate the inputs changing
     ---@param simulator Simulator Use simulator:<function>() to set inputs etc.
@@ -34,12 +34,11 @@ do
         simulator:setInputBool(4, simulator:getIsClicked(2))--Target Detected
         simulator:setInputNumber(7, simulator:getSlider(1))-- Radar Rotation
         simulator:setInputNumber(8, simulator:getSlider(2)*50000)--Target Distance
-        simulator:setInputNumber(9, simulator:getSlider(3)*0.5)--Target Azimuth
-        simulator:setInputNumber(10, simulator:getSlider(4)*0.1)--Target Elevation
-        simulator:setInputNumber(11, simulator:getSlider(5)*50000)--GPSX
-        simulator:setInputNumber(12, simulator:getSlider(6)*50000)--GPSY
-        simulator:setInputNumber(13, simulator:getSlider(7)*500)--Altitude
-        simulator:setInputNumber(14, simulator:getSlider(8)*50)--Zoom
+        simulator:setInputNumber(10, simulator:getSlider(4)*0.05)--Target Elevation
+        simulator:setInputNumber(11, simulator:getSlider(5)*500)--GPSX
+        simulator:setInputNumber(12, simulator:getSlider(6)*500)--GPSY
+        simulator:setInputNumber(14, simulator:getSlider(7)*1)--Compass
+        simulator:setInputNumber(15, simulator:getSlider(8)*50)--Zoom
     end;
 end
 ---@endsection
@@ -58,57 +57,34 @@ pN = property.getNumber
 pB = property.getBool
 pT = property.getText
 
-k=0
-Rng = 1
 tick = 0
 Tgts = {}
 function onTick()
     RadarRot = gN(7)
     TgtDist = gN(8)
-    TgtX = gN(9)
-    TgtY = gN(10)
+    TgtAz = gN(9)
+    TgtEle = gN(10)
     GPSX = gN(11)
     GPSY = gN(12)
     Altitude = gN(13)
-    Zoom = gN(14)
+    Compass = gN(14)*-1
+    Zoom = gN(15)
     MaxDist = pN("Max Radar Distance")
+    AzDetec = pN("Azimuth Detection")
     
     Touch1 = gB(1)
     TgtFound = gB(4)
 
-    Range = MaxDist*Rng
-    TgtYrad = TgtY*(2*math.pi)
-    gDist = TgtDist/math.cos(TgtYrad)
-    AltDif = TgtDist*math.tan(TgtYrad)
     tick = tick + 1
-    if not Touch1 then
-        k=0
-    else
-        k=k+1
-    end
-    if k==1 then
-        Pulse=true
-    else
-        Pulse=false
-    end
-    if Pulse and Rng == 1 then
-        Rng = 0.25
-    elseif Pulse and Rng == 0.25 then
-        Rng = 0.5
-    elseif Pulse and Rng == 0.5 then
-        Rng = 0.75
-    elseif Pulse and Rng == 0.75 then
-        Rng = 1
-    end
     while RadarRot >= 1 do
         RadarRot = RadarRot - 1
     end
-    if TgtFound and TgtX <= 0.03 and TgtX >= -0.03 then
-        tgt = {Rot = RadarRot, AltDif = AltDif, Dist = gDist, Time = tick}
+    if TgtFound and TgtAz <= AzDetec and TgtAz >= (AzDetec*-1) and TgtDist >= 100 then
+        tgt = {Rot = RadarRot, Dist = TgtDist, Az = TgtAz, Elev = TgtEle, Time = tick}
         table.insert(Tgts, tgt)
     end
     for i, tgt in ipairs(Tgts) do
-        if tick - tgt.Time >= 300 or tick - tgt.Time <= -300 then
+        if tick - tgt.Time >= 500 or tick - tgt.Time <= -500 then
             table.remove(Tgts, i)
         end
     end
@@ -150,32 +126,34 @@ function onDraw()
     h = screen.getHeight()
     cx = w/2
     cy = h/2
-    
+    Rng1,Rng2 = map.mapToScreen(0,0,Zoom,w,h,MaxDist,0)
+    Range = Rng1-w/2
+
     screen.drawMap(GPSX, GPSY, Zoom)
     screen.setColor(200, 100, 0)
-    drawArc(cx, cy, cy/4, 0, 360, false, 18)
-    drawArc(cx, cy, cy/4*2, 0, 360, false, 18)
-    drawArc(cx, cy, cy/4*3, 0, 360, false, 18)
-    drawLineInd(cx, cy, cy, 0, 1, 0, 360)
-    drawLineInd(cx, cy, cy, 0, 1, 90, 450)
-    drawLineInd(cx, cy, cy, 0, 1, 180, 540)
-    drawLineInd(cx, cy, cy, 0, 1, 270, 630)
+    drawArc(cx, cy, Range/4, 0, 360, false, 18)
+    drawArc(cx, cy, Range/4*2, 0, 360, false, 18)
+    drawArc(cx, cy, Range/4*3, 0, 360, false, 18)
+    drawLineInd(cx, cy, Range, Compass, 1, 0, 360)
+    drawLineInd(cx, cy, Range, Compass, 1, 90, 450)
+    drawLineInd(cx, cy, Range, Compass, 1, 270, 630)
+
+    screen.setColor(150, 25, 0)
+    drawLineInd(cx, cy, Range, Compass, 1, 180, 540)
 
     screen.setColor(200, 0, 0)
-    drawArc(cx, cy, cy, 0, 360, false, 18)
-    drawLineInd(cx, cy, cy, RadarRot, 1, 180, 540)
+    drawArc(cx, cy, Range, 0, 360, false, 18)
+    drawLineInd(cx, cy, Range, RadarRot+Compass, 1, 180, 540)
 
-    screen.setColor(200, 200, 200)
-    screen.drawTextBox(0, 0, w, 7, string.format("%.0f",Range), -1, 0)
+    screen.setColor(255, 0, 0)
     for i, tgt in ipairs(Tgts) do
-        local Rad = (tgt.Rot-0.25)*2*math.pi
-        local x = cx+(tgt.Dist/Range*cy*math.cos(Rad))
-        local y = cy+(tgt.Dist/Range*cy*math.sin(Rad))
-        local z = tgt.AltDif
-        screen.setColor(0, 0, 0)
-        screen.drawRectF(x-10, y+2, 20, 7)
-        screen.setColor(200, 200, 200)
-        screen.drawCircleF(x, y, 0.3)
-        screen.drawTextBox(x-10, y+2, 20, 7, string.format("%.0fm",z),0,0)
+        local ElevRad = tgt.Elev*(2*math.pi)
+        local RotRad = (tgt.Rot+Compass)*(2*math.pi)
+        local gDist = tgt.Dist/math.cos(ElevRad)
+        local AltDif = (tgt.Dist*math.tan(ElevRad))+Altitude
+        local TgtX = GPSX+gDist*math.sin(RotRad)
+        local TgtY = GPSY+gDist*math.cos(RotRad)
+        local x, y = map.mapToScreen(GPSX, GPSY, Zoom, w, h, TgtX, TgtY)
+        screen.drawCircleF(x, y, 2)
     end
 end
