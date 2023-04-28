@@ -1,6 +1,10 @@
 {
 	"folders": [
 		{
+			"name": "Test",
+			"path": "Test"
+		},
+		{
 			"path": "Loading Screen"
 		},
 		{
